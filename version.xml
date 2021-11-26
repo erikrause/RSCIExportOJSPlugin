@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE version SYSTEM "../../../lib/pkp/dtd/pluginVersion.dtd">
+
+<!--
+  * plugins/importexport/rsci/version.xml
+  * Plugin version information.
+  -->
+<version>
+    <application>rsciexport</application>
+    <type>plugins.importexport</type>
+    <release>0.1.0.0</release>
+    <date>2021-11-18</date>
+</version>
