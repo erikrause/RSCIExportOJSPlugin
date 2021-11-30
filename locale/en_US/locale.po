@@ -1,0 +1,27 @@
+msgid "plugins.importexport.rsciexport.displayName"
+msgstr "RSCI XML Export Plugin"
+
+msgid "plugins.importexport.rsciexport.description"
+msgstr "Export article metadata in RSCI XML."
+
+
+
+msgid "plugins.importexport.rsciexport.export"
+msgstr "Export Data"
+
+msgid "plugins.importexport.rsciexport.export.issue"
+msgstr "Export Issues"
+
+msgid "plugins.importexport.rsciexport.export.selectIssue"
+msgstr "Select an Issue to export."
+
+
+
+msgid "plugins.importexport.rsciexport.settings.form.journalRSCITitleId"
+msgstr "Journal ID in RSCI"
+
+msgid "plugins.importexport.rsciexport.settings.form.exportSections"
+msgstr "Export section names."
+
+msgid "plugins.importexport.rsciexport.settings.form.exportArtTypeFromSectionAbbrev"
+msgstr "Export article type by section abbreviations. Abbreviations must match with article types declared by RSCI. If this option is disabled or types doesn't match, then the 'RAR' type will be assigned to the articles."

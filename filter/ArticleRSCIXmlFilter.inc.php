@@ -53,7 +53,9 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         {
             $langs[] = $this->_convertLocaleToISO639($locale);
         }
-        $doc->appendChild($this->_createJournalNode($doc, Application::getRequest()->getJournal(), $issue, $langs));
+        /** @var Request $request */
+        $request = Registry::get('request', false);
+        $doc->appendChild($this->_createJournalNode($doc, $request->getJournal(), $issue, $langs));
 
         return $doc;
 	}
@@ -137,20 +139,21 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
     protected function _createArticlesNode($doc, $issue, $langs)
     {
         $articlesNode = $doc->createElement('articles');
-        $publishedArticleDao = DAORegistry::getDAO('PublishedArticleDAO');
-        $publishedArticles = $publishedArticleDao->getPublishedArticles($issue->getId());
-        $publishedArticles = $this->_sortArticlesByPages($publishedArticles);
+//        $publishedArticleDao = DAORegistry::getDAO('PublishedArticleDAO');
+//        $publishedArticles = $publishedArticleDao->getPublishedArticles($issue->getId());
+        $publications = $this->_getPublications($issue);
+        $publications = $this->_sortPublicationsByPages($publications);
         $lastSectionId = null;
 
-        foreach ($publishedArticles as $article)
+        foreach ($publications as $publication)
         {
-            if ($this->_exportSettings['isExportSections'] && ($lastSectionId !== $article->getSectionId()))
+            if ($this->_exportSettings['isExportSections'] && ($lastSectionId !== $publication->getData('sectionId')()))
             {
-                $articlesNode->appendChild($this->_createSectionNode($doc, $article, $langs));
+                $articlesNode->appendChild($this->_createSectionNode($doc, $publication, $langs));
             }
 
-            $articlesNode->appendChild($this->_createArticleNode($doc, $article, $langs));
-            $lastSectionId = $article->getSectionId();
+            $articlesNode->appendChild($this->_createArticleNode($doc, $publication, $langs));
+            $lastSectionId = $publication->getData('sectionId');
         }
 
         return $articlesNode;
@@ -158,19 +161,20 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
 
     /**
      * @param $doc DOMDocument
-     * @param $article PublishedArticle
+     * @param $publication Publication
      * @param $langs string[]
      * @return DOMElement|false
      */
-    protected function _createArticleNode($doc, $article, $langs)
+    protected function _createArticleNode($doc, $publication, $langs)
     {
-        $submission = Application::getSubmissionDAO()->getById($article->getId());
-
+//        /** @var SubmissionDAO $submissionDAO */
+//        $submissionDAO = DAORegistry::getDAO('SubmissionDAO');
+//        $submission = $submissionDAO->getById($publication->getId());
         $articleNode = $doc->createElement('article');
-        $articleNode->appendChild($doc->createElement('pages', $submission->getPages()));
+        $articleNode->appendChild($doc->createElement('pages', $publication->getData('pages')));
 
         $sectionDAO = DAORegistry::getDAO('SectionDAO');
-        $section = $sectionDAO->getById($article->getSectionId());
+        $section = $sectionDAO->getById($publication->getData('sectionId'));
         $sectionAbbrev = $section->getAbbrev(AppLocale::getPrimaryLocale());
 
         if ($this->_exportSettings['isExportArtTypeFromSectionAbbrev'] && in_array($sectionAbbrev, $this->_artTypes))
@@ -183,7 +187,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         }
 
         $authorsNode = $doc->createElement('authors');
-        $authors = $submission->getAuthors();
+        $authors = $publication->getData('authors');
         $authorCount = 1;
         foreach ($authors as $author)
         {
@@ -192,15 +196,15 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         }
         $articleNode->appendChild($authorsNode);
 
-        $articleNode->appendChild($this->_createArtTitlesNode($doc, $article, $langs));
-        $articleNode->appendChild($this->_createAbstractsNode($doc, $article, $langs));
+        $articleNode->appendChild($this->_createArtTitlesNode($doc, $publication, $langs));
+        $articleNode->appendChild($this->_createAbstractsNode($doc, $publication, $langs));
 
         //$articleNode->appendChild();    // TODO: create <text>
 
-        $articleNode->appendChild($this->_createCodesNode($doc, $article));
-        $articleNode->appendChild($this->_createKeywordsNode($doc, $article, $langs));
-        $articleNode->appendChild($this->_createReferencesNode($doc, $article));
-        $articleNode->appendChild($this->_createFilesNode($doc, $article));
+        $articleNode->appendChild($this->_createCodesNode($doc, $publication));
+        $articleNode->appendChild($this->_createKeywordsNode($doc, $publication, $langs));
+        $articleNode->appendChild($this->_createReferencesNode($doc, $publication));
+        $articleNode->appendChild($this->_createFilesNode($doc, $publication));
 
         return $articleNode;
     }
@@ -253,18 +257,18 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
 
     /**
      * @param $doc DOMDocument
-     * @param $article Article
+     * @param $publication Publication
      * @param $langs string[]
      * @return DOMElement|false
      */
-    protected function _createArtTitlesNode($doc, $article, $langs)
+    protected function _createArtTitlesNode($doc, $publication, $langs)
     {
         $artTitlesNode = $doc->createElement('artTitles');
 
         foreach ($langs as $lang)
         {
             $locale = $this->_convertISO639ToLocale($lang);
-            $artTitleNode = $doc->createElement('artTitle', htmlentities($article->getTitle($locale, false), ENT_XML1));
+            $artTitleNode = $doc->createElement('artTitle', htmlentities($publication->getData('title',  $locale), ENT_XML1));
             $artTitleNode->setAttribute('lang', $lang);
             $artTitlesNode->appendChild($artTitleNode);
         }
@@ -274,18 +278,18 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
 
     /**
      * @param $doc DOMDocument
-     * @param $article Article
+     * @param $publication Publication
      * @param $langs string[]
      * @return DOMElement|false
      */
-    protected function _createAbstractsNode($doc, $article, $langs)
+    protected function _createAbstractsNode($doc, $publication, $langs)
     {
         $abstractsNode = $doc->createElement('abstracts');
 
         foreach($langs as $lang)
         {
             $locale = $this->_convertISO639ToLocale($lang);
-            $abstractNode = $doc->createElement('abstract', htmlentities(strip_tags($article->getAbstract($locale)), ENT_XML1));
+            $abstractNode = $doc->createElement('abstract', htmlentities(strip_tags($publication->getData('abstract', $locale)), ENT_XML1));
             $abstractNode->setAttribute('lang', $lang);
             $abstractsNode->appendChild($abstractNode);
         }
@@ -295,23 +299,23 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
 
     /**
      * @param $doc DOMDocument
-     * @param $article Article
+     * @param $publication Publication
      * @return DOMElement|false
      */
-    protected function _createCodesNode($doc, $article)
+    protected function _createCodesNode($doc, $publication)
     {
         $codesNode = $doc->createElement('codes');
-        $codesNode->appendChild($doc->createElement('doi', $article->getStoredPubId('doi')));
+        $codesNode->appendChild($doc->createElement('doi', $publication->getStoredPubId('doi')));
         return $codesNode;
     }
 
     /**
      * @param $doc DOMDocument
-     * @param $article Article
+     * @param $publication Publication
      * @param $langs string[]
      * @return DOMElement|false
      */
-    protected function _createKeywordsNode($doc, $article, $langs)
+    protected function _createKeywordsNode($doc, $publication, $langs)
     {
         $keywordsNode = $doc->createElement('keywords');
         $submissionKeywordsDAO = DAORegistry::getDAO('SubmissionKeywordDAO');
@@ -321,7 +325,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
             $kwdGroup = $doc->createElement('kwdGroup');
             $kwdGroup->setAttribute('lang', $lang);
             $locale = $this->_convertISO639ToLocale($lang);
-            $keywords = $submissionKeywordsDAO->getKeywords($article->getId(), array($locale))[$locale];
+            $keywords = $submissionKeywordsDAO->getKeywords($publication->getId(), array($locale))[$locale];
 
             foreach ($keywords as $locale=>$keyword)
             {
@@ -334,19 +338,21 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
 
     /**
      * @param $doc DOMDocument
-     * @param $article Article
+     * @param $publication Publication
      * @return DOMElement|false
      */
-    protected function _createReferencesNode($doc, $article)
+    protected function _createReferencesNode($doc, $publication)
     {
         $referencesNode = $doc->createElement('references');
+        /** @var CitationDAO $citationDAO */
         $citationDAO = DAORegistry::getDAO('CitationDAO');
-        $citations = $citationDAO->getBySubmissionId($article->getId());
+        $citationsQ = $citationDAO->getByPublicationId($publication->getId());
         $lang = $this->_convertLocaleToISO639(AppLocale::getPrimaryLocale());
+        /** @var Citation[] $citations */
+        $citations = $citationsQ->toArray();
 
-        for ($i = 0; $i < $citations->getCount(); $i++)
+        foreach($citations as $citation)
         {
-            $citation = $citations->next();
             $referenceNode = $doc->createElement('reference');
             $refInfoNode = $doc->createElement('refInfo');
             $refInfoNode->setAttribute('lang', $lang);
@@ -361,25 +367,33 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
 
     /**
      * @param $doc DOMDocument
-     * @param $article Article
+     * @param $publication Publication
      * @return DOMElement|false
      */
-    protected function _createFilesNode($doc, $article)
+    protected function _createFilesNode($doc, $publication)
     {
         $filesNode = $doc->createElement('files');
 
+        /** @var ArticleGalleyDAO $articleGalleyDAO */
         $articleGalleyDAO = DAORegistry::getDAO('ArticleGalleyDAO');
-        $galley = $articleGalleyDAO->getBySubmissionId($article->getId())->next();
+        $galley = $articleGalleyDAO->getByPublicationId($publication->getId())->next();
 
-        $request = Application::getRequest();
-        $context = $request->getRouter()->getContext($request);
-        $resourceURL = $request->url($context->getPath(), 'article', 'view', $article->getBestArticleId(), null, null, true);
+        $context = $this->_getContext();
+        /** @var Request $request */
+        $request = Registry::get('request', false);
+        $publicPublicationId = $publication->getStoredPubId('publisher-id');        // TODO: check.
+        if (!empty($publicPublicationId))
+            $bestId = $publicPublicationId;
+        else
+            $bestId = $publication->getId();
+
+        $resourceURL = $request->url($context->getPath(), 'article', 'view', $bestId, null, null, true);
         $furlNode = $doc->createElement('furl', $resourceURL);
         $furlNode->setAttribute('location', 'publisher');
         $furlNode->setAttribute('version', 'published');
         $filesNode->appendChild($furlNode);
 
-        $fileNode = $doc->createElement('file', $this->getArticleFileNameToRSCI($article));
+        $fileNode = $doc->createElement('file', $this->getPublicationFileNameToRSCI($publication));
         $fileNode->setAttribute('desc', 'fullText');
         $filesNode->appendChild($fileNode);
 
@@ -388,17 +402,19 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
 
     /**
      * Converts galley filename to RSCI name format for archiving (example: "13-16.pdf").
-     * @param $article Article
+     * @param $publication Publication
      * @return string
      */
-    static public function getArticleFileNameToRSCI($article)
+    static public function getPublicationFileNameToRSCI($publication)
     {
+        /** @var ArticleGalleyDAO $articleGalleyDAO */
         $articleGalleyDAO = DAORegistry::getDAO('ArticleGalleyDAO');
-        $galley = $articleGalleyDAO->getBySubmissionId($article->getId())->next();
-        $fileName = $galley->getFile()->getName(AppLocale::getPrimaryLocale());
+        /** @var ArticleGalley $galley */
+        $galley = $articleGalleyDAO->getByPublicationId($publication->getId())->next();     // TODO: check next().
+        $fileName = $galley->getFile()->getData('name', AppLocale::getPrimaryLocale());
         $fileParts = explode('.', $fileName);
         $fileExtension = end($fileParts);
-        $pages = $article->getPages();
+        $pages = $publication->getData('pages');
         return $pages . '.' . $fileExtension;
     }
 
@@ -484,25 +500,64 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
      */
     protected function _getIssuePages($issue)
     {
-        $publishedArticleDao = DAORegistry::getDAO('PublishedArticleDAO');
-        $submissionDao = Application::getSubmissionDAO();
-
-        $publishedArticles = $publishedArticleDao->getPublishedArticles($issue->getId());
+        $publications = $this->_getPublications($issue);
+//        $submissionDao = Application::getSubmissionDAO();
+//        $publishedArticleDao = DAORegistry::getDAO('PublishedArticleDAO');
+//
+//        $publishedArticles = $publishedArticleDao->getPublishedArticles($issue->getId());
 
         $startingPages = array();
         $endingPages = array();
 
-        foreach ($publishedArticles as $publishedArticle)
+        foreach ($publications as $publication)
         {
-            $submission = $submissionDao->getById($publishedArticle->getId());
-            $startingPages[] = intval($submission->getStartingPage());
-            $endingPages[] = intval($submission->getEndingPage());
+            //$submission = $submissionDao->getById($publishedArticle->getId());
+            $startingPages[] = intval($publication->getStartingPage());
+            $endingPages[] = intval($publication->getEndingPage());
         }
 
         $issueStartingPage = strval(min($startingPages));
         $issueEndingPage = strval(max($endingPages));
 
         return $issueStartingPage . '-' . $issueEndingPage;
+    }
+
+    /**
+     * @param $issue Issue
+     * @return Publication[]
+     */
+    protected function _getPublications($issue)
+    {
+        $submissionsIterator = Services::get('submission')->getMany([
+            'contextId' => $this->_getContext()->getId(),
+            'issueId' => $issue->getId()
+        ]);
+        /** @var Submission[] $publiations */
+        $submissions = iterator_to_array($submissionsIterator);
+
+        $publications = array();
+
+        foreach ($submissions as $submission)
+        {
+            $publications []= $submission->getCurrentPublication();
+        }
+
+        return $publications;
+
+//        $publicationsIterator = Services::get('publication')->getMany([
+//            'contextId' => $this->_getContext()->getId(),
+//            'issueId' => $issue->getId()
+//        ]);
+//        return iterator_to_array($publicationsIterator);
+    }
+
+    /**
+     * @return Context
+     */
+    protected function _getContext()
+    {
+        $request = Registry::get('request', false);
+        return $request->getContext();
     }
 
     /**
@@ -591,14 +646,15 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
 
     /**
      * @param DOMDocument $doc
-     * @param $article Article
+     * @param $publication Publication
      * @param string[] $langs
      * @return DOMElement|false
      */
-    protected function _createSectionNode($doc, $article, $langs)
+    protected function _createSectionNode($doc, $publication, $langs)
     {
         $sectionDAO = DAORegistry::getDAO('SectionDAO');
-        $section = $sectionDAO->getById($article->getSectionId());
+        /** @var Section $section */
+        $section = $sectionDAO->getById($publication->getData('sectionId'));
         $sectionNode = $doc->createElement('section');
 
         foreach ($langs as $lang)
@@ -612,17 +668,17 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
     }
 
     /**
-     * @param $articles Article[]
-     * @return Article[]
+     * @param $publications Publication[]
+     * @return Publication[]
      */
-    protected function _sortArticlesByPages($articles)
+    protected function _sortPublicationsByPages($publications)
     {
         $startingPages = array();
 
-        foreach ($articles as $article)
+        foreach ($publications as $publication)
         {
-            $startingPage = intval($article->getStartingPage());
-            $startingPages += array($startingPage => $article);
+            $startingPage = intval($publication->getStartingPage());
+            $startingPages += array($startingPage => $publication);
         }
 
         ksort($startingPages, SORT_NUMERIC);

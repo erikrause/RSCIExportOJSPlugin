@@ -1,0 +1,27 @@
+msgid "plugins.importexport.rsciexport.displayName"
+msgstr "Модуль «Экспорт РИНЦ XML»"
+
+msgid "plugins.importexport.rsciexport.description"
+msgstr "Экспортирует метаданные статей в формат РИНЦ XML."
+
+
+
+msgid "plugins.importexport.rsciexport.export"
+msgstr "Экспортировать данные"
+
+msgid "plugins.importexport.rsciexport.export.issue"
+msgstr "Экспортировать выпуск"
+
+msgid "plugins.importexport.rsciexport.export.selectIssue"
+msgstr "Выберите выпуск для экспорта."
+
+
+
+msgid "plugins.importexport.rsciexport.settings.form.journalRSCITitleId"
+msgstr "Идентификатор журнала в РИНЦ"
+
+msgid "plugins.importexport.rsciexport.settings.form.exportSections"
+msgstr "Экспортировать разделы выпуска (используются только названия разделов)"
+
+msgid "plugins.importexport.rsciexport.settings.form.exportArtTypeFromSectionAbbrev"
+msgstr "Экспортировать тип статьи по значению аббревиатуры раздела основного языка сайта. Аббревиатуры должны совпадать с типами статей, определенными в РИНЦ. Если опция не включена или тип не определен в РИНЦ, то статье будет присваиваться тип 'RAR' (Научная статья)."

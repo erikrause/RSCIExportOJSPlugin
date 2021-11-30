@@ -89,12 +89,15 @@ class RSCIExportPlugin extends ImportExportPlugin
         return parent::manage($args, $request);
     }
 
+    private $_context;
+
     /**
      * Get the zip with XML for an issue.
      * @param $issueId int
+     * @param $context Context
      * @return string XML contents representing the supplied issue IDs.
      */
-    function exportIssue($issueId)
+    function exportIssue($issueId, $context)
     {
         $issueDao = DAORegistry::getDAO('IssueDAO');
         $issue = $issueDao->getById($issueId);
@@ -152,18 +155,28 @@ class RSCIExportPlugin extends ImportExportPlugin
         $coverName = end($coverUrlParts);
         $fileManager->copyFile($coverUrl, $this->getExportPath() . $coverName);
 
-        $publishedArticleDao = DAORegistry::getDAO('PublishedArticleDAO');
-        $articles = $publishedArticleDao->getPublishedArticles($issue->getId());
+        $request = Registry::get('request', false);
+        $context = $request->getContext();
+        $submissionsIterator = Services::get('submission')->getMany([
+            'contextId' => $context->getId(),
+            'issueId' => $issue->getId()
+        ]);
+        /** @var Submission[] $publiations */
+        $submissions = iterator_to_array($submissionsIterator);
+//        $publishedArticleDao = DAORegistry::getDAO('PublishedArticleDAO');
+//        $articles = $publishedArticleDao->getPublishedArticles($issue->getId());
         $articleGalleyDAO = DAORegistry::getDAO('ArticleGalleyDAO');
 
-        foreach ($articles as $article)
+        foreach ($submissions as $submission)
         {
+            /** @var Publication $publication */
+            $publication = $submission->getCurrentPublication();
             /** @var ArticleGalley $galley */
-            $galley = $articleGalleyDAO->getBySubmissionId($article->getId())->next();
-            $articleFilePath = $galley->getFile()->getFilePath();
+            $galley = $articleGalleyDAO->getByPublicationId($publication->getId())->next();
+            $articleFilePath = $galley->getFile()->getData('path');
             $fileParts = explode('.', $articleFilePath);
             $fileExtension = end($fileParts);
-            $pages = $article->getPages();
+            $pages = $publication->getData('pages');
             $fileManager->copyFile($articleFilePath, $this->getExportPath() . $pages . '.' . $fileExtension);
         }
 
