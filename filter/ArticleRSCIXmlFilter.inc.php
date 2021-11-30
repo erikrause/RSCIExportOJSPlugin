@@ -173,7 +173,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         $section = $sectionDAO->getById($article->getSectionId());
         $sectionAbbrev = $section->getAbbrev(AppLocale::getPrimaryLocale());
 
-        if ($this->_exportSettings['isExportArtTypeFromSectionAbbrev'] || in_array($sectionAbbrev, $this->_artTypes))
+        if ($this->_exportSettings['isExportArtTypeFromSectionAbbrev'] && in_array($sectionAbbrev, $this->_artTypes))
         {
             $articleNode->appendChild($doc->createElement('artType', $sectionAbbrev));
         }
