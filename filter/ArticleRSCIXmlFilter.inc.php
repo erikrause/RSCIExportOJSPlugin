@@ -573,7 +573,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
 
         if ($lang3chars == '')
         {
-            $user = Application::getRequest()->getUser();
+            $user = Registry::get('request', false)->getUser();
             $notificationManager = new NotificationManager();
             $notificationManager->createTrivialNotification($user->getId(),
                 NOTIFICATION_TYPE_WARNING,
@@ -606,7 +606,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         }
 
         // If can't convert ISO639 to UNIX locale:
-        $user = Application::getRequest()->getUser();
+        $user = Registry::get('request', false)->getUser();
         $notificationManager = new NotificationManager();
         $notificationManager->createTrivialNotification($user->getId(),
                                             NOTIFICATION_TYPE_WARNING,
@@ -625,7 +625,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
      */
     protected function _getISO639()
     {
-        if (!is_a($this->_iso, $this))
+        if (!isset($this->_iso))
         {
             require_once($_SERVER['DOCUMENT_ROOT'] . '/plugins/importexport/rsciexport/php-iso-639/src/ISO639.php'); // TODO: import without $_SERVER.
             $this->_iso = new ISO639();

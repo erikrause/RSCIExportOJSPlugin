@@ -83,12 +83,13 @@ class RSCIExportSettingsForm extends Form {
     /**
      * Execute the form.
      */
-    function execute() {
+    function execute(...$functionArgs) {
         $plugin = $this->_getPlugin();
         $contextId = $this->_getContextId();
         foreach($this->getFormFields() as $fieldName => $fieldType) {
             $plugin->updateSetting($contextId, $fieldName, $this->getData($fieldName), $fieldType);
         }
+        parent::execute(...$functionArgs);
     }
 
 

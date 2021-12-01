@@ -89,8 +89,6 @@ class RSCIExportPlugin extends ImportExportPlugin
         return parent::manage($args, $request);
     }
 
-    private $_context;
-
     /**
      * Get the zip with XML for an issue.
      * @param $issueId int
@@ -115,7 +113,6 @@ class RSCIExportPlugin extends ImportExportPlugin
         $rsciExportFilters = $filterDao->getObjectsByGroup('issue=>rsci-xml');
         assert(count($rsciExportFilters) == 1); // Assert only a single serialization filter
         $exportFilter = array_shift($rsciExportFilters);
-        $context = Application::getRequest()->getContext();
         $exportSettings = array ('isExportArtTypeFromSectionAbbrev' => $this->getSetting($context->getId(), 'exportArtTypeFromSectionAbbrev'),
                                     'isExportSections' => $this->getSetting($context->getId(), 'exportSections'),
                                     'journalRSCITitleId' => $this->getSetting($context->getId(), 'journalRSCITitleId'));
@@ -213,7 +210,7 @@ class RSCIExportPlugin extends ImportExportPlugin
         if ($this->_generatedTempPath === '')
         {
             $exportPath = parent::getExportPath();
-            $journal = Application::getRequest()->getJournal();
+            $journal = Registry::get('request', false)->getJournal();
             $this->_generatedTempPath =  $exportPath . $this->getPluginSettingsPrefix() . 'Temp-' . date('Ymd-His'). $journal->getId() . '/';
         }
         return $this->_generatedTempPath;
