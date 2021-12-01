@@ -150,7 +150,8 @@ class RSCIExportPlugin extends ImportExportPlugin
         $coverUrl = $issue->getLocalizedCoverImageUrl();
         $coverUrlParts = explode('/', $coverUrl);
         $coverName = end($coverUrlParts);
-        $fileManager->copyFile($coverUrl, $this->getExportPath() . $coverName);
+        if ($coverUrl != "")
+            $fileManager->copyFile($coverUrl, $this->getExportPath() . $coverName);
 
         $request = Registry::get('request', false);
         $context = $request->getContext();
@@ -174,7 +175,8 @@ class RSCIExportPlugin extends ImportExportPlugin
             $fileParts = explode('.', $articleFilePath);
             $fileExtension = end($fileParts);
             $pages = $publication->getData('pages');
-            $fileManager->copyFile($articleFilePath, $this->getExportPath() . $pages . '.' . $fileExtension);
+            if ($articleFilePath != "")
+                $fileManager->copyFile($articleFilePath, $this->getExportPath() . $pages . '.' . $fileExtension);
         }
 
         // ZIP:
