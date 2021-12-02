@@ -411,11 +411,15 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         $articleGalleyDAO = DAORegistry::getDAO('ArticleGalleyDAO');
         /** @var ArticleGalley $galley */
         $galley = $articleGalleyDAO->getByPublicationId($publication->getId())->next();     // TODO: check next().
-        $fileName = $galley->getFile()->getData('name', AppLocale::getPrimaryLocale());
-        $fileParts = explode('.', $fileName);
-        $fileExtension = end($fileParts);
-        $pages = $publication->getData('pages');
-        return $pages . '.' . $fileExtension;
+        if (isset($galley))
+        {
+            $fileName = $galley->getFile()->getData('name', AppLocale::getPrimaryLocale());
+            $fileParts = explode('.', $fileName);
+            $fileExtension = end($fileParts);
+            $pages = $publication->getData('pages');
+            return $pages . '.' . $fileExtension;
+        }
+        else return '';
     }
 
     /**
