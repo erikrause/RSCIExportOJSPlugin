@@ -631,7 +631,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
     {
         if (!isset($this->_iso))
         {
-            require_once($_SERVER['DOCUMENT_ROOT'] . '/plugins/importexport/rsciexport/php-iso-639/src/ISO639.php'); // TODO: import without $_SERVER.
+            require_once('php-iso-639/src/ISO639.php');
             $this->_iso = new ISO639();
         }
         return $this->_iso;
