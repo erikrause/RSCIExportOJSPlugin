@@ -78,9 +78,9 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         if ($issn != '')
         $journalNode->appendChild($doc->createElement('issn', $issn));
 
-        $essn = $journal->getData('onlineIssn');
-        if ($essn != '')
-            $journalNode->appendChild($doc->createElement('essn', $essn));
+        $eissn = $journal->getData('onlineIssn');
+        if ($eissn != '')
+            $journalNode->appendChild($doc->createElement('eissn', $eissn));
 
         $primaryLocale = AppLocale::getPrimaryLocale();
         $journalNode->appendChild($this->_createJournalInfoNode($doc, $journal, $primaryLocale));
