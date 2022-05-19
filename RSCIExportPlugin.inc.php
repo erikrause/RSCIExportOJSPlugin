@@ -161,10 +161,8 @@ class RSCIExportPlugin extends ImportExportPlugin
             /** @var ArticleGalley $galley */
             $galley = $articleGalleyDAO->getBySubmissionId($article->getId())->next();
             $articleFilePath = $galley->getFile()->getFilePath();
-            $fileParts = explode('.', $articleFilePath);
-            $fileExtension = end($fileParts);
-            $pages = $article->getPages();
-            $fileManager->copyFile($articleFilePath, $this->getExportPath() . $pages . '.' . $fileExtension);
+            $fileName = $galley->getFile()->getName(AppLocale::getPrimaryLocale());
+            $fileManager->copyFile($articleFilePath, $this->getExportPath() . explode(' ', $fileName)[1]);
         }
 
         // ZIP:
