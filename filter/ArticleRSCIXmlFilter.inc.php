@@ -414,10 +414,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         if (isset($galley))
         {
             $fileName = $galley->getFile()->getData('name', AppLocale::getPrimaryLocale());
-            $fileParts = explode('.', $fileName);
-            $fileExtension = end($fileParts);
-            $pages = $publication->getData('pages');
-            return $pages . '.' . $fileExtension;
+            return explode(' ', $fileName)[1];
         }
         else return '';
     }
