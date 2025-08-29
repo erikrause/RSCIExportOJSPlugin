@@ -531,7 +531,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
     {
         $submissionsIterator = Services::get('submission')->getMany([
             'contextId' => $this->_getContext()->getId(),
-            'issueId' => $issue->getId()
+            'issueIds' => $issue->getId()
         ]);
         /** @var Submission[] $publiations */
         $submissions = iterator_to_array($submissionsIterator);
