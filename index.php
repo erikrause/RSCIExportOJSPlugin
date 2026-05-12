@@ -7,8 +7,6 @@
  *
  */
 
-require_once('RSCIExportPlugin.inc.php');
 
-return new RSCIExportPlugin();
-
+return new \APP\plugins\importexport\rsciexport\RSCIExportPlugin();
 

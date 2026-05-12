@@ -9,7 +9,13 @@
  */
 
 import('lib.pkp.classes.filter.PersistableFilter');
+
+use APP\core\Request;
+use APP\facades\Repo;
 use Matriphe\ISO639\ISO639;
+use PKP\facades\Locale;
+use PKP\notification\PKPNotification;
+use PKP\submission\PKPSubmission;
 
 class ArticleRSCIXmlFilter extends PersistableFilter {
 
@@ -28,7 +34,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
 	/**
 	 * @copydoc PersistableFilter::getClassName()
 	 */
-	function getClassName() {
+    function getClassName(): string {
 		return 'plugins.importexport.rsciexport.filter.ArticleRSCIXmlFilter';
 	}
 
@@ -46,7 +52,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         $doc->preserveWhiteSpace = false;
         $doc->formatOutput = true;
 
-        $locales = AppLocale::getSupportedLocales();
+        $locales = Locale::getSupportedLocales();
 		$langs = array();
 
         foreach ($locales as $locale=>$_)
@@ -82,7 +88,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         if ($eissn != '')
             $journalNode->appendChild($doc->createElement('eissn', $eissn));
 
-        $primaryLocale = AppLocale::getPrimaryLocale();
+        $primaryLocale = Locale::getPrimaryLocale();
         $journalNode->appendChild($this->_createJournalInfoNode($doc, $journal, $primaryLocale));
 
         $journalNode->appendChild($this->_createIssueNode($doc, $issue, $langs));
@@ -139,8 +145,6 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
     protected function _createArticlesNode($doc, $issue, $langs)
     {
         $articlesNode = $doc->createElement('articles');
-//        $publishedArticleDao = DAORegistry::getDAO('PublishedArticleDAO');
-//        $publishedArticles = $publishedArticleDao->getPublishedArticles($issue->getId());
         $publications = $this->_getPublications($issue);
         $publications = $this->_sortPublicationsByPages($publications);
         $lastSectionId = null;
@@ -173,9 +177,8 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         $articleNode = $doc->createElement('article');
         $articleNode->appendChild($doc->createElement('pages', $publication->getData('pages')));
 
-        $sectionDAO = DAORegistry::getDAO('SectionDAO');
-        $section = $sectionDAO->getById($publication->getData('sectionId'));
-        $sectionAbbrev = $section->getAbbrev(AppLocale::getPrimaryLocale());
+        $section = Repo::section()->get($publication->getData('sectionId'));
+        $sectionAbbrev = $section->getAbbrev(Locale::getPrimaryLocale());
 
         if ($this->_exportSettings['isExportArtTypeFromSectionAbbrev'] && in_array($sectionAbbrev, $this->_artTypes))
         {
@@ -347,7 +350,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         /** @var CitationDAO $citationDAO */
         $citationDAO = DAORegistry::getDAO('CitationDAO');
         $citationsQ = $citationDAO->getByPublicationId($publication->getId());
-        $lang = $this->_convertLocaleToISO639(AppLocale::getPrimaryLocale());
+        $lang = $this->_convertLocaleToISO639(Locale::getPrimaryLocale());
         /** @var Citation[] $citations */
         $citations = $citationsQ->toArray();
 
@@ -374,9 +377,8 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
     {
         $filesNode = $doc->createElement('files');
 
-        /** @var ArticleGalleyDAO $articleGalleyDAO */
-        $articleGalleyDAO = DAORegistry::getDAO('ArticleGalleyDAO');
-        $galley = $articleGalleyDAO->getByPublicationId($publication->getId())->next();
+//        $galleys = Repo::galley()->dao->getByPublicationId($publication->getId());
+//        $galley = array_shift($galleys);
 
         $context = $this->_getContext();
         /** @var Request $request */
@@ -407,14 +409,13 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
      */
     static public function getPublicationFileNameToRSCI($publication)
     {
-        /** @var ArticleGalleyDAO $articleGalleyDAO */
-        $articleGalleyDAO = DAORegistry::getDAO('ArticleGalleyDAO');
-        /** @var ArticleGalley $galley */
-        $galley = $articleGalleyDAO->getByPublicationId($publication->getId())->next();     // TODO: check next().
+        /** @var Galley $galley */
+        $galleys = Repo::galley()->dao->getByPublicationId($publication->getId());
+        $galley = array_shift($galleys);
         if (isset($galley))
         {
-            $fileName = $galley->getFile()->getData('name', AppLocale::getPrimaryLocale());
-            return explode(' ', $fileName)[1];
+            $fileName = $galley->getFile()->getData('name', Locale::getPrimaryLocale());
+            return $fileName;
         }
         else return '';
     }
@@ -529,10 +530,12 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
      */
     protected function _getPublications($issue)
     {
-        $submissionsIterator = Services::get('submission')->getMany([
-            'contextId' => $this->_getContext()->getId(),
-            'issueIds' => $issue->getId()
-        ]);
+        $submissionsIterator = Repo::submission()->getCollector()
+            ->filterByContextIds([$issue->getData('journalId')])
+            ->filterByIssueIds([$issue->getId()])
+            ->filterByStatus([PKPSubmission::STATUS_PUBLISHED, PKPSubmission::STATUS_SCHEDULED])
+            ->GetMany();
+
         /** @var Submission[] $publiations */
         $submissions = iterator_to_array($submissionsIterator);
 
@@ -544,12 +547,6 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         }
 
         return $publications;
-
-//        $publicationsIterator = Services::get('publication')->getMany([
-//            'contextId' => $this->_getContext()->getId(),
-//            'issueId' => $issue->getId()
-//        ]);
-//        return iterator_to_array($publicationsIterator);
     }
 
     /**
@@ -577,7 +574,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
             $user = Registry::get('request', false)->getUser();
             $notificationManager = new NotificationManager();
             $notificationManager->createTrivialNotification($user->getId(),
-                NOTIFICATION_TYPE_WARNING,
+                PKPNotification::NOTIFICATION_TYPE_WARNING,
                 array('pluginName' => $this->getDisplayName(),
                     'contents' => "Error in converting UNIX locale (" . $locale . ") to ISO639 language! Empty language string will be used."));
         }
@@ -595,7 +592,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         $iso = $this->_getISO639();
         $language = $iso->languageByCode3($lang3chars);
         $lang2chars = $iso->code1ByLanguage($language);
-        $locales = AppLocale::getSupportedLocales();
+        $locales = Locale::getSupportedLocales();
 
         foreach ($locales as $locale=>$_)
         {
@@ -610,10 +607,10 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         $user = Registry::get('request', false)->getUser();
         $notificationManager = new NotificationManager();
         $notificationManager->createTrivialNotification($user->getId(),
-                                            NOTIFICATION_TYPE_WARNING,
+                                            PKPNotification::NOTIFICATION_TYPE_WARNING,
                                                         array('pluginName' => $this->getDisplayName(),
                                                               'contents' => "Error in converting ISO639 language (" . $lang3chars . ") to UNIX locale! Primary locale will be used."));
-        return AppLocale::getPrimaryLocale();
+        return Locale::getPrimaryLocale();
     }
 
     /**

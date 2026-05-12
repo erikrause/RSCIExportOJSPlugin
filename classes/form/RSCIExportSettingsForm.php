@@ -9,7 +9,12 @@
  */
 
 
-import('lib.pkp.classes.form.Form');
+namespace APP\plugins\importexport\rsciexport\classes\form;
+
+use APP\plugins\importexport\rsciexport\RSCIExportPlugin;
+use PKP\form\Form;
+use PKP\form\validation\FormValidatorPost;
+use PKP\form\validation\FormValidatorCSRF;
 
 class RSCIExportSettingsForm extends Form {
 
@@ -27,12 +32,12 @@ class RSCIExportSettingsForm extends Form {
         return $this->_contextId;
     }
 
-    /** @var CrossRefExportPlugin */
+    /** @var RSCIExportPlugin */
     var $_plugin;
 
     /**
      * Get the plugin.
-     * @return CrossRefExportPlugin
+     * @return RSCIExportPlugin
      */
     function _getPlugin() {
         return $this->_plugin;
