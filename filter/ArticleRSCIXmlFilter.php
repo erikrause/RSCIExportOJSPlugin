@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file plugins/importexport/rsciexport/filter/ArticleRSCIXmlFilter.inc.php
+ * @file plugins/importexport/rsciexport/filter/ArticleRSCIXmlFilter.php
  * @class ArticleRSCIXmlFilter
  * @ingroup plugins_importexport_rsciexport
  *

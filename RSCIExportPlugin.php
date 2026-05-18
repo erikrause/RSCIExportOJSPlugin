@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file plugins/importexport/rsciexport/RSCIExportPlugin.inc.php
+ * @file plugins/importexport/rsciexport/RSCIExportPlugin.php
  * @class RSCIExportPlugin
  * @ingroup plugins_importexport_rsci
  *
