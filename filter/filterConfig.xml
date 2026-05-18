@@ -20,7 +20,7 @@
 		<!-- RSCI article output -->
 		<filter
 			inGroup="issue=>rsci-xml"
-			class="plugins.importexport.rsciexport.filter.ArticleRSCIXmlFilter"
+			class="APP\plugins\importexport\rsciexport\filter\ArticleRSCIXmlFilter"
 			isTemplate="0" />
 	</filters>
 </filterConfig>

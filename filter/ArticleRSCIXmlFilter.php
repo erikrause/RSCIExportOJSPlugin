@@ -8,7 +8,8 @@
  * @brief Class that converts an Issue to a RSCI XML document.
  */
 
-import('lib.pkp.classes.filter.PersistableFilter');
+
+namespace APP\plugins\importexport\rsciexport\filter;
 
 use APP\core\Request;
 use APP\facades\Repo;
@@ -16,27 +17,10 @@ use Matriphe\ISO639\ISO639;
 use PKP\facades\Locale;
 use PKP\notification\PKPNotification;
 use PKP\submission\PKPSubmission;
+use PKP\filter\PersistableFilter;
+
 
 class ArticleRSCIXmlFilter extends PersistableFilter {
-
-    /**
-	 * Constructor
-	 * @param $filterGroup FilterGroup
-	 */
-	function __construct($filterGroup) {
-		parent::__construct($filterGroup);
-	}
-
-
-	//
-	// Implement template methods from PersistableFilter
-	//
-	/**
-	 * @copydoc PersistableFilter::getClassName()
-	 */
-    function getClassName(): string {
-		return 'plugins.importexport.rsciexport.filter.ArticleRSCIXmlFilter';
-	}
 
 	//
 	// Implement template methods from Filter
