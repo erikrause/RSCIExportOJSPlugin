@@ -29,8 +29,6 @@ use APP\notification\NotificationManager;
 use APP\plugins\importexport\rsciexport\classes\form\RSCIExportSettingsForm;
 use PKP\submission\PKPSubmission;
 use ZipArchive;
-use PKP\facades\Locale;
-
 
 class RSCIExportPlugin extends ImportExportPlugin
 {
