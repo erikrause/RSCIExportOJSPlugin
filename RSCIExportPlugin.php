@@ -10,7 +10,6 @@
 
 namespace APP\plugins\importexport\rsciexport;
 
-use APP\core\Services;
 use APP\facades\Repo;
 use APP\journal\JournalDAO;
 use APP\publication\Publication;
@@ -24,11 +23,12 @@ use PKP\core\Registry;
 use PKP\db\DAORegistry;
 use PKP\file\FileManager;
 use PKP\galley\Galley;
-use PKP\notification\PKPNotification;
+use APP\notification\Notification;
 use PKP\plugins\ImportExportPlugin;
 use APP\notification\NotificationManager;
 use APP\plugins\importexport\rsciexport\classes\form\RSCIExportSettingsForm;
 use PKP\submission\PKPSubmission;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use ZipArchive;
 
 class RSCIExportPlugin extends ImportExportPlugin
@@ -65,7 +65,7 @@ class RSCIExportPlugin extends ImportExportPlugin
                 {
                     $user = $request->getUser();
                     $notificationManager = new NotificationManager();
-                    $notificationManager->createTrivialNotification($user->getId(), PKPNotification::NOTIFICATION_TYPE_ERROR, array('pluginName' => $this->getDisplayName(), 'contents' => "Choose one issue."));
+                    $notificationManager->createTrivialNotification($user->getId(), Notification::NOTIFICATION_TYPE_ERROR, array('pluginName' => $this->getDisplayName(), 'contents' => "Choose one issue."));
                     $request->redirectUrl(str_replace("exportIssue", "", $request->getRequestPath()));
                     break;
                 }
@@ -80,7 +80,7 @@ class RSCIExportPlugin extends ImportExportPlugin
                 }
             default:
                 $dispatcher = $request->getDispatcher();
-                $dispatcher->handle404();
+                throw new NotFoundHttpException();
         }
     }
 
@@ -97,7 +97,7 @@ class RSCIExportPlugin extends ImportExportPlugin
                 $settingsForm->readInputData();
                 if ($settingsForm->validate()) {
                     $settingsForm->execute([]);
-                    $notificationManager->createTrivialNotification($user->getId(), PKPNotification::NOTIFICATION_TYPE_SUCCESS);
+                    $notificationManager->createTrivialNotification($user->getId(), Notification::NOTIFICATION_TYPE_SUCCESS);
                     return new JSONMessage();
                 } else {
                     return new JSONMessage(true, $settingsForm->fetch($request));

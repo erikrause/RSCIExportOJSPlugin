@@ -30,7 +30,7 @@ use PKP\core\Registry;
 use PKP\db\DAORegistry;
 use PKP\facades\Locale;
 use PKP\galley\Galley;
-use PKP\notification\PKPNotification;
+use APP\notification\Notification;
 use PKP\submission\PKPSubmission;
 use PKP\filter\PersistableFilter;
 
@@ -581,7 +581,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
             if ($user) {
                 $notificationManager = new NotificationManager();
                 $notificationManager->createTrivialNotification($user->getId(),
-                    PKPNotification::NOTIFICATION_TYPE_WARNING,
+                    Notification::NOTIFICATION_TYPE_WARNING,
                     array('pluginName' => __('plugins.importexport.rsciexport.displayName'),
                         'contents' => "Error in converting UNIX locale (" . $locale . ") to ISO639 language! Empty language string will be used."));
             }
@@ -617,7 +617,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         if ($user) {
             $notificationManager = new NotificationManager();
             $notificationManager->createTrivialNotification($user->getId(),
-                                                PKPNotification::NOTIFICATION_TYPE_WARNING,
+                                                Notification::NOTIFICATION_TYPE_WARNING,
                                                             array('pluginName' => __('plugins.importexport.rsciexport.displayName'),
                                                                   'contents' => "Error in converting ISO639 language (" . $lang3chars . ") to UNIX locale! Primary locale will be used."));
         }
