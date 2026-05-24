@@ -11,6 +11,7 @@
 
 namespace APP\plugins\importexport\rsciexport\filter;
 
+use APP\core\Application;
 use APP\core\Request;
 use APP\facades\Repo;
 use APP\issue\Issue;
@@ -394,7 +395,15 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         else
             $bestId = $publication->getId();
 
-        $resourceURL = $request->url($context->getPath(), 'article', 'view', $bestId, null, null, true);
+        $resourceURL = $request->getDispatcher()->url(
+            $request,
+            Application::ROUTE_PAGE,
+            $context->getPath(),
+            'article',
+            'view',
+            [$publication->getId()],
+            urlLocaleForPage: ''
+        );
         $furlNode = $doc->createElement('furl', $resourceURL);
         $furlNode->setAttribute('location', 'publisher');
         $furlNode->setAttribute('version', 'published');
