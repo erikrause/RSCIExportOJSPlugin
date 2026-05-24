@@ -28,6 +28,14 @@ msgstr "Экспортировать выпуск"
 msgid "plugins.importexport.rsciexport.export.selectIssue"
 msgstr "Выберите выпуск для экспорта."
 
+msgid "plugins.importexport.rsciexport.cliUsage"
+msgstr ""
+"Использование: \n"
+"{$scriptName} {$pluginName} export [zipFileName] [journal_path] issue [issueId]\n"
+
+msgid "plugins.importexport.rsciexport.export.error.issueNotFound"
+msgstr "Выпуск с указанным идентификатором \"{$issueId}\" не найден."
+
 
 
 msgid "plugins.importexport.rsciexport.settings.form.journalRSCITitleId"
