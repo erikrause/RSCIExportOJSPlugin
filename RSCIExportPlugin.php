@@ -12,6 +12,7 @@ namespace APP\plugins\importexport\rsciexport;
 
 use APP\core\Services;
 use APP\facades\Repo;
+use APP\journal\JournalDAO;
 use APP\publication\Publication;
 use APP\submission\Submission;
 use APP\template\TemplateManager;
@@ -140,6 +141,22 @@ class RSCIExportPlugin extends ImportExportPlugin
     protected function _uploadZip($issueId, $xml)
     {
         $fileManager = new FileManager();
+        $zipPath = $this->createIssueZip($issueId, $xml);
+
+        // UPLOAD:
+        $fileManager->downloadByPath($zipPath);
+        $fileManager->rmtree($this->getExportPath());
+    }
+
+    /**
+     * Create the zip with XML, cover image, and article files for an issue.
+     * @param $issueId int
+     * @param $xml string XML file content
+     * @return string Path to the generated zip file.
+     */
+    protected function createIssueZip($issueId, $xml)
+    {
+        $fileManager = new FileManager();
         $xmlFileName = $this->getExportPath() . 'Markup_unicode.xml';
         $fileManager->writeFile($xmlFileName, $xml);
 
@@ -187,21 +204,24 @@ class RSCIExportPlugin extends ImportExportPlugin
         $filesToArchive = scandir($this->getExportPath());
 
         foreach($filesToArchive as $file) {
-            if (is_file($this->getExportPath(). $file)) {
+            if (is_file($this->getExportPath(). $file) && $this->getExportPath() . $file != $zipPath) {
                 $zip->addFile($this->getExportPath() . $file, basename($file));
             }
         }
         $zip->close();
 
-        // UPLOAD:
-        $fileManager->downloadByPath($zipPath);
-        $fileManager->rmtree($this->getExportPath());
+        return $zipPath;
     }
 
     /**
      * @var string
      */
     protected $_generatedTempPath = '';
+
+    /**
+     * @var int
+     */
+    protected $_exportContextId = 0;
 
     /**
      * @copydoc ImportExportPlugin::getExportPath()
@@ -211,8 +231,10 @@ class RSCIExportPlugin extends ImportExportPlugin
         if ($this->_generatedTempPath === '')
         {
             $exportPath = parent::getExportPath();
-            $journal = Registry::get('request', false)->getJournal();
-            $this->_generatedTempPath =  $exportPath . $this->getPluginSettingsPrefix() . 'Temp-' . date('Ymd-His'). $journal->getId() . '/';
+            $request = Registry::get('request', false);
+            $journal = $request ? $request->getJournal() : null;
+            $contextId = $journal ? $journal->getId() : $this->_exportContextId;
+            $this->_generatedTempPath =  $exportPath . $this->getPluginSettingsPrefix() . 'Temp-' . date('Ymd-His'). $contextId . '/';
         }
         return $this->_generatedTempPath;
     }
@@ -231,7 +253,68 @@ class RSCIExportPlugin extends ImportExportPlugin
      */
     function executeCLI($scriptName, &$args)
     {
-        // TODO: Implement executeCLI() method.
+        $command = array_shift($args);
+
+        if ($command == 'export') {
+            $zipFile = array_shift($args);
+        } else {
+            $zipFile = $command;
+        }
+
+        $journalPath = array_shift($args);
+        $issueArg = array_shift($args);
+        $issueId = $issueArg == 'issue' ? array_shift($args) : $issueArg;
+
+        $journalDao = DAORegistry::getDAO('JournalDAO'); /** @var JournalDAO $journalDao */
+        $journal = $journalDao->getByPath($journalPath);
+
+        if (!$journal) {
+            if ($journalPath != '') {
+                echo __('plugins.importexport.common.cliError') . "\n";
+                echo __('plugins.importexport.common.error.unknownContext', ['contextPath' => $journalPath]) . "\n\n";
+            }
+            $this->usage($scriptName);
+            return;
+        }
+
+        if (!$zipFile || !$issueId) {
+            $this->usage($scriptName);
+            return;
+        }
+
+        if ($this->isRelativePath($zipFile) && !preg_match('/^[A-Za-z]:[\/\\\\]/', $zipFile) && substr($zipFile, 0, 2) !== '\\\\') {
+            $zipFile = PWD . '/' . $zipFile;
+        }
+
+        $outputDir = dirname($zipFile);
+        if (!is_writable($outputDir) || (file_exists($zipFile) && !is_writable($zipFile))) {
+            echo __('plugins.importexport.common.cliError') . "\n";
+            echo __('plugins.importexport.common.export.error.outputFileNotWritable', ['param' => $zipFile]) . "\n\n";
+            $this->usage($scriptName);
+            return;
+        }
+
+        $issue = Repo::issue()->getByBestId($issueId, $journal->getId());
+        if (!$issue) {
+            echo __('plugins.importexport.common.cliError') . "\n";
+            echo __('plugins.importexport.rsciexport.export.error.issueNotFound', ['issueId' => $issueId]) . "\n\n";
+            return;
+        }
+
+        $this->_exportContextId = $journal->getId();
+        $exportXml = $this->exportIssue($issue->getId(), $journal);
+        $zipPath = $this->createIssueZip($issue->getId(), $exportXml);
+
+        $fileManager = new FileManager();
+        if (!$fileManager->copyFile($zipPath, $zipFile)) {
+            echo __('plugins.importexport.common.cliError') . "\n";
+            echo __('plugins.importexport.common.export.error.outputFileNotWritable', ['param' => $zipFile]) . "\n\n";
+            $fileManager->rmtree($this->getExportPath());
+            return;
+        }
+        $fileManager->rmtree($this->getExportPath());
+
+        return true;
     }
 
     /**
@@ -240,7 +323,10 @@ class RSCIExportPlugin extends ImportExportPlugin
      */
     function usage($scriptName)
     {
-        // TODO: Implement usage() method.
+        echo __('plugins.importexport.rsciexport.cliUsage', [
+            'scriptName' => $scriptName,
+            'pluginName' => $this->getName()
+        ]) . "\n";
     }
 
     /**

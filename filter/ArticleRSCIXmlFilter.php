@@ -12,7 +12,9 @@ import('lib.pkp.classes.filter.PersistableFilter');
 
 use APP\core\Request;
 use APP\facades\Repo;
+use APP\notification\NotificationManager;
 use Matriphe\ISO639\ISO639;
+use PKP\db\DAORegistry;
 use PKP\facades\Locale;
 use PKP\notification\PKPNotification;
 use PKP\submission\PKPSubmission;
@@ -52,16 +54,22 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         $doc->preserveWhiteSpace = false;
         $doc->formatOutput = true;
 
-        $locales = Locale::getSupportedLocales();
-		$langs = array();
+        /** @var Request $request */
+        $request = Registry::get('request', false);
+        $journal = $request ? $request->getJournal() : null;
+        if (!$journal) {
+            $journalDao = DAORegistry::getDAO('JournalDAO');
+            $journal = $journalDao->getById($issue->getData('journalId'));
+        }
+        $this->_context = $journal;
 
-        foreach ($locales as $locale=>$_)
+        $langs = array();
+        foreach ($journal->getSupportedLocales() as $locale)
         {
             $langs[] = $this->_convertLocaleToISO639($locale);
         }
-        /** @var Request $request */
-        $request = Registry::get('request', false);
-        $doc->appendChild($this->_createJournalNode($doc, $request->getJournal(), $issue, $langs));
+
+        $doc->appendChild($this->_createJournalNode($doc, $journal, $issue, $langs));
 
         return $doc;
 	}
@@ -88,7 +96,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         if ($eissn != '')
             $journalNode->appendChild($doc->createElement('eissn', $eissn));
 
-        $primaryLocale = Locale::getPrimaryLocale();
+        $primaryLocale = $journal->getPrimaryLocale();
         $journalNode->appendChild($this->_createJournalInfoNode($doc, $journal, $primaryLocale));
 
         $journalNode->appendChild($this->_createIssueNode($doc, $issue, $langs));
@@ -555,7 +563,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
     protected function _getContext()
     {
         $request = Registry::get('request', false);
-        return $request->getContext();
+        return $request && $request->getContext() ? $request->getContext() : $this->_context;
     }
 
     /**
@@ -571,12 +579,15 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
 
         if ($lang3chars == '')
         {
-            $user = Registry::get('request', false)->getUser();
-            $notificationManager = new NotificationManager();
-            $notificationManager->createTrivialNotification($user->getId(),
-                PKPNotification::NOTIFICATION_TYPE_WARNING,
-                array('pluginName' => $this->getDisplayName(),
-                    'contents' => "Error in converting UNIX locale (" . $locale . ") to ISO639 language! Empty language string will be used."));
+            $request = Registry::get('request', false);
+            $user = $request ? $request->getUser() : null;
+            if ($user) {
+                $notificationManager = new NotificationManager();
+                $notificationManager->createTrivialNotification($user->getId(),
+                    PKPNotification::NOTIFICATION_TYPE_WARNING,
+                    array('pluginName' => __('plugins.importexport.rsciexport.displayName'),
+                        'contents' => "Error in converting UNIX locale (" . $locale . ") to ISO639 language! Empty language string will be used."));
+            }
         }
 
         return strtoupper($lang3chars);
@@ -592,9 +603,9 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         $iso = $this->_getISO639();
         $language = $iso->languageByCode3($lang3chars);
         $lang2chars = $iso->code1ByLanguage($language);
-        $locales = Locale::getSupportedLocales();
+        $locales = $this->_getContext()->getSupportedLocales();
 
-        foreach ($locales as $locale=>$_)
+        foreach ($locales as $locale)
         {
             $lang2charsFromLocale = substr($locale, 0, 2);
             if (str_contains($lang2charsFromLocale, $lang2chars))
@@ -604,19 +615,27 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         }
 
         // If can't convert ISO639 to UNIX locale:
-        $user = Registry::get('request', false)->getUser();
-        $notificationManager = new NotificationManager();
-        $notificationManager->createTrivialNotification($user->getId(),
-                                            PKPNotification::NOTIFICATION_TYPE_WARNING,
-                                                        array('pluginName' => $this->getDisplayName(),
-                                                              'contents' => "Error in converting ISO639 language (" . $lang3chars . ") to UNIX locale! Primary locale will be used."));
-        return Locale::getPrimaryLocale();
+        $request = Registry::get('request', false);
+        $user = $request ? $request->getUser() : null;
+        if ($user) {
+            $notificationManager = new NotificationManager();
+            $notificationManager->createTrivialNotification($user->getId(),
+                                                PKPNotification::NOTIFICATION_TYPE_WARNING,
+                                                            array('pluginName' => __('plugins.importexport.rsciexport.displayName'),
+                                                                  'contents' => "Error in converting ISO639 language (" . $lang3chars . ") to UNIX locale! Primary locale will be used."));
+        }
+        return $this->_getContext()->getPrimaryLocale();
     }
 
     /**
      * @var ISO639
      */
     protected $_iso;
+
+    /**
+     * @var Context
+     */
+    protected $_context;
 
     /**
      * @return ISO639
