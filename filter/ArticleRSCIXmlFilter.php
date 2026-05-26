@@ -327,18 +327,26 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
     protected function _createKeywordsNode($doc, $publication, $langs)
     {
         $keywordsNode = $doc->createElement('keywords');
-        $submissionKeywordsDAO = DAORegistry::getDAO('SubmissionKeywordDAO');
 
         foreach ($langs as $lang)
         {
             $kwdGroup = $doc->createElement('kwdGroup');
             $kwdGroup->setAttribute('lang', $lang);
             $locale = $this->_convertISO639ToLocale($lang);
-            $keywords = $submissionKeywordsDAO->getKeywords($publication->getId(), array($locale))[$locale];
+            $keywords = $publication->getData('keywords', $locale) ?? array();
 
-            foreach ($keywords as $locale=>$keyword)
+            foreach ($keywords as $keyword)
             {
-                $kwdGroup->appendChild($doc->createElement('keyword', htmlentities($keyword, ENT_XML1)));
+                $keywordName = is_array($keyword) ? ($keyword['name'] ?? '') : $keyword;
+
+                if ($keywordName === '')
+                {
+                    continue;
+                }
+
+                $keywordNode = $doc->createElement('keyword');
+                $keywordNode->appendChild($doc->createTextNode($keywordName));
+                $kwdGroup->appendChild($keywordNode);
             }
             $keywordsNode->appendChild($kwdGroup);
         }
