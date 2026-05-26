@@ -3,12 +3,12 @@
 
 <!--
   * plugins/importexport/rsci/version.xml
-  * Author: Kamilov  Erkin, Surgut Branch of SRISA
+  * Author: Kamilov  Erkin
   * Plugin version information.
   -->
 <version>
     <application>rsciexport</application>
     <type>plugins.importexport</type>
-    <release>0.1.3.0</release>
-    <date>2026-05-12</date>
+    <release>0.1.3.1</release>
+    <date>2026-05-27</date>
 </version>
