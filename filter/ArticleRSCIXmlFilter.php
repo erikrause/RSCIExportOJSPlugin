@@ -242,7 +242,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
             $individInfoNode->appendChild($doc->createElement('surname', $author->getFamilyName($locale)));
             $individInfoNode->appendChild($doc->createElement('initials', $this->_createInitials($author->getGivenName($locale))));
 
-            $affiliation = $this->_parseAffiliation($author->getAffiliation($locale));
+            $affiliation = $this->_parseAffiliation($this->_getAuthorAffiliation($author, $locale));
             $individInfoNode->appendChild($doc->createElement('orgName', htmlentities($affiliation->Organization, ENT_XML1)));
             $individInfoNode->appendChild($doc->createElement('address', htmlentities($affiliation->Address, ENT_XML1)));
 
@@ -432,6 +432,33 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
             return $fileName;
         }
         else return '';
+    }
+
+    /**
+     * @param $author Author
+     * @param $locale string
+     * @return string
+     */
+    protected function _getAuthorAffiliation($author, $locale)
+    {
+        $affiliations = array();
+
+        foreach ($author->getAffiliations() as $affiliation)
+        {
+            $affiliationName = $affiliation->getAffiliationName($locale);
+
+            if (empty($affiliationName))
+            {
+                $affiliationName = $affiliation->getLocalizedName($locale);
+            }
+
+            if (!empty($affiliationName))
+            {
+                $affiliations[] = $affiliationName;
+            }
+        }
+
+        return implode('; ', $affiliations);
     }
 
     /**
