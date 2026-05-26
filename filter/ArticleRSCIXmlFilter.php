@@ -477,11 +477,10 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
             $address = '';
             $organization = $affiliation;
 
-            $lastComma = mb_strrpos($affiliation, ',');
+            $lastComma = mb_strpos($affiliation, ',');
             if ($lastComma !== false) {
-                $next_to_last = mb_strrpos($affiliation, ',', $lastComma - mb_strlen($affiliation) - 1);
-                $organization = mb_substr($affiliation, 0, $next_to_last);
-                $address = mb_substr($affiliation, $next_to_last);
+                $organization = mb_substr($affiliation, 0, $lastComma);
+                $address = mb_substr($affiliation, $lastComma);
                 $address = ltrim($address, ", ");
             }
 
