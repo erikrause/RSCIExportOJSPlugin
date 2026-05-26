@@ -14,7 +14,7 @@
 			displayName="plugins.importexport.rsciexport.displayName"
 			description="plugins.importexport.rsciexport.description"
 			inputType="class::classes.article.Issue"
-			outputType="xml::dtd" />
+			outputType="xml::schema(https://validator.elibrary.ru/Journals/DownloadScheme)" />
 	</filterGroups>
 	<filters>
 		<!-- RSCI article output -->

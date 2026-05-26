@@ -214,7 +214,10 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
 
         $articleNode->appendChild($this->_createCodesNode($doc, $publication));
         $articleNode->appendChild($this->_createKeywordsNode($doc, $publication, $langs));
-        $articleNode->appendChild($this->_createReferencesNode($doc, $publication));
+        if ($referencesNode = $this->_createReferencesNode($doc, $publication))
+        {
+            $articleNode->appendChild($referencesNode);
+        }
         $articleNode->appendChild($this->_createFilesNode($doc, $publication));
 
         return $articleNode;
@@ -361,6 +364,11 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         $lang = $this->_convertLocaleToISO639(Locale::getPrimaryLocale());
         /** @var Citation[] $citations */
         $citations = $citationsQ->toArray();
+
+        if (empty($citations))
+        {
+            return false;
+        }
 
         foreach($citations as $citation)
         {
